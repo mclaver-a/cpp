@@ -6,13 +6,13 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
+#include <cstdlib>
 
 class BitcoinExchange {
 private:
     std::map<std::string, float> _data;
     bool _isValidDate(const std::string& date);
-    bool _isValidValue(const std::string& str, float& value);
+    bool _isValidValue(const std::string& valStr, float& value);
 
 public:
     BitcoinExchange();
