@@ -4,23 +4,24 @@ BitcoinExchange::BitcoinExchange() {}
 
 BitcoinExchange::BitcoinExchange(const std::string& dbPath) {
     std::ifstream file(dbPath.c_str());
-    if (!file.is_open()) throw std::runtime_error("Could not open database.");
-
+    if (!file.is_open()) throw std::runtime_error("could not open database.");
     std::string line;
-    std::getline(file, line); // Skip header
+    std::getline(file, line);
     while (std::getline(file, line)) {
         size_t sep = line.find(',');
         if (sep != std::string::npos) {
-            std::string date = line.substr(0, sep);
-            float rate = std::atof(line.substr(sep + 1).c_str());
-            _data[date] = rate;
+            _data[line.substr(0, sep)] = (float)std::atof(line.substr(sep + 1).c_str());
         }
     }
 }
 
+BitcoinExchange::BitcoinExchange(const BitcoinExchange& other) { *this = other; }
+BitcoinExchange& BitcoinExchange::operator=(const BitcoinExchange& other) {
+    if (this != &other) this->_data = other._data;
+    return *this;
+}
 BitcoinExchange::~BitcoinExchange() {}
 
-// Simplified date validation
 bool BitcoinExchange::_isValidDate(const std::string& date) {
     if (date.length() != 10 || date[4] != '-' || date[7] != '-') return false;
     int y = std::atoi(date.substr(0, 4).c_str());
@@ -37,48 +38,22 @@ bool BitcoinExchange::_isValidDate(const std::string& date) {
 
 void BitcoinExchange::processInput(const std::string& inputPath) {
     std::ifstream file(inputPath.c_str());
-    if (!file.is_open()) {
-        std::cerr << "Error: could not open file." << std::endl;
-        return;
-    }
-
+    if (!file.is_open()) { std::cerr << "Error: could not open file." << std::endl; return; }
     std::string line;
-    std::getline(file, line); // Skip header
+    std::getline(file, line);
     while (std::getline(file, line)) {
         size_t sep = line.find(" | ");
-        if (sep == std::string::npos) {
-            std::cerr << "Error: bad input => " << line << std::endl;
-            continue;
-        }
-
+        if (sep == std::string::npos) { std::cerr << "Error: bad input => " << line << std::endl; continue; }
         std::string date = line.substr(0, sep);
         std::string valStr = line.substr(sep + 3);
-        
-        if (!_isValidDate(date)) {
-            std::cerr << "Error: bad input => " << date << std::endl;
-            continue;
-        }
-
-        char* end;
-        double val = std::strtod(valStr.c_str(), &end);
-        if (*end != '\0' && !isspace(*end)) { 
-            std::cerr << "Error: bad input => " << valStr << std::endl;
-        } else if (val < 0) {
-            std::cerr << "Error: not a positive number." << std::endl;
-        } else if (val > 1000) {
-            std::cerr << "Error: too large a number." << std::endl;
-        } else {
-            // THE CORE LOGIC: lower_bound finds the first element NOT LESS than date
+        if (!_isValidDate(date)) { std::cerr << "Error: bad input => " << date << std::endl; continue; }
+        float val = (float)std::atof(valStr.c_str());
+        if (val < 0) std::cerr << "Error: not a positive number." << std::endl;
+        else if (val > 1000) std::cerr << "Error: too large a number." << std::endl;
+        else {
             std::map<std::string, float>::iterator it = _data.lower_bound(date);
-            
-            if (it->first != date && it != _data.begin()) {
-                --it; // Go to the previous date if exact match isn't found
-            }
-            
-            if (it->first > date && it == _data.begin())
-                std::cerr << "Error: No data available for this date." << std::endl;
-            else
-                std::cout << date << " => " << val << " = " << (val * it->second) << std::endl;
+            if (it != _data.begin() && it->first != date) --it;
+            std::cout << date << " => " << valStr << " = " << val * it->second << std::endl;
         }
     }
 }
