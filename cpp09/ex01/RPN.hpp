@@ -2,22 +2,18 @@
 #define RPN_HPP
 
 #include <iostream>
-#include <stack>
+#include <list>
 #include <string>
-#include <sstream>
-#include <cstdlib>
 
 class RPN {
 private:
-    std::stack<int> _stack; // Uses std::deque under the hood
-
+    std::list<int> _stack;
 public:
     RPN();
-    RPN(const RPN &other);
-    RPN &operator=(const RPN &other);
+    RPN(const RPN& other);
+    RPN& operator=(const RPN& other);
     ~RPN();
-
-    void calculate(const std::string &expression);
+    void calculate(const std::string& expr);
 };
 
 #endif
