@@ -38,22 +38,70 @@ bool BitcoinExchange::_isValidDate(const std::string& date) {
 
 void BitcoinExchange::processInput(const std::string& inputPath) {
     std::ifstream file(inputPath.c_str());
-    if (!file.is_open()) { std::cerr << "Error: could not open file." << std::endl; return; }
+    if (!file.is_open()) {
+        std::cerr << "Error: could not open file." << std::endl;
+        return;
+    }
     std::string line;
-    std::getline(file, line);
+    // 2. Skip the header line ("date | value")
+    if (!std::getline(file, line))
+        return;
+
+    // 3. Process each line
     while (std::getline(file, line)) {
         size_t sep = line.find(" | ");
-        if (sep == std::string::npos) { std::cerr << "Error: bad input => " << line << std::endl; continue; }
+
+        // Error: No separator found
+        if (sep == std::string::npos) {
+            std::cerr << "Error: bad input => " << line << std::endl;
+            continue;
+        }
+
         std::string date = line.substr(0, sep);
         std::string valStr = line.substr(sep + 3);
-        if (!_isValidDate(date)) { std::cerr << "Error: bad input => " << date << std::endl; continue; }
-        float val = (float)std::atof(valStr.c_str());
-        if (val < 0) std::cerr << "Error: not a positive number." << std::endl;
-        else if (val > 1000) std::cerr << "Error: too large a number." << std::endl;
+
+        // 4. Validate Date
+        if (!_isValidDate(date)) {
+            std::cerr << "Error: bad input => " << date << std::endl;
+            continue;
+        }
+
+        // 5. Validate Value
+        // Check if valStr is empty or contains non-numeric garbage
+        char* endPtr;
+        float val = std::strtof(valStr.c_str(), &endPtr);
+
+        if (*endPtr != '\0' && !isspace(*endPtr)) {
+            std::cerr << "Error: bad input => " << valStr << std::endl;
+            continue;
+        }
+        if (val < 0) {
+            std::cerr << "Error: not a positive number." << std::endl;
+            continue;
+        }
+        if (val > 1000) {
+            std::cerr << "Error: too large a number." << std::endl;
+            continue;
+        }
+
+        // 6. Find the Exchange Rate in the Map
+        // lower_bound returns the first element NOT LESS than 'date'
+        std::map<std::string, float>::iterator it = _data.lower_bound(date);
+
+        if (it != _data.end() && it->first == date) {
+            // Case A: Exact match found
+            std::cout << date << " => " << val << " = " << val * it->second << std::endl;
+        }
+        else if (it == _data.begin()) {
+            // Case B: Date is earlier than our very first database entry.
+            // Since there is no "lower date", we cannot perform the calculation.
+            std::cerr << "Error: bad input => " << date << std::endl;
+        }
         else {
-            std::map<std::string, float>::iterator it = _data.lower_bound(date);
-            if (it != _data.begin() && it->first != date) --it;
-            std::cout << date << " => " << valStr << " = " << val * it->second << std::endl;
+            // Case C: Exact match not found, but a lower date exists.
+            // We move the iterator back one position to get the closest past date.
+            --it;
+            std::cout << date << " => " << val << " = " << val * it->second << std::endl;
         }
     }
 }
