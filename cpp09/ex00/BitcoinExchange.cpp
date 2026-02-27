@@ -43,11 +43,14 @@ void BitcoinExchange::processInput(const std::string& inputPath) {
         return;
     }
     std::string line;
-    // 2. Skip the header line ("date | value")
-    if (!std::getline(file, line))
-        return;
-
-    // 3. Process each line
+    // Handle header
+    if (std::getline(file, line)) {
+        if (line != "date | value") {
+            if (line.find('|') != std::string::npos) {
+                file.seekg(0);
+            }
+        }
+    }
     while (std::getline(file, line)) {
         size_t sep = line.find(" | ");
 
@@ -60,16 +63,16 @@ void BitcoinExchange::processInput(const std::string& inputPath) {
         std::string date = line.substr(0, sep);
         std::string valStr = line.substr(sep + 3);
 
-        // 4. Validate Date
+        // Validate Date
         if (!_isValidDate(date)) {
             std::cerr << "Error: bad input => " << date << std::endl;
             continue;
         }
 
-        // 5. Validate Value
+        // Validate Value
         // Check if valStr is empty or contains non-numeric garbage
         char* endPtr;
-        float val = std::strtof(valStr.c_str(), &endPtr);
+        float val = static_cast<float>(std::strtod(valStr.c_str(), &endPtr));
 
         if (*endPtr != '\0' && !isspace(*endPtr)) {
             std::cerr << "Error: bad input => " << valStr << std::endl;
@@ -84,22 +87,20 @@ void BitcoinExchange::processInput(const std::string& inputPath) {
             continue;
         }
 
-        // 6. Find the Exchange Rate in the Map
+        // Find the Exchange Rate in the Map
         // lower_bound returns the first element NOT LESS than 'date'
         std::map<std::string, float>::iterator it = _data.lower_bound(date);
 
         if (it != _data.end() && it->first == date) {
-            // Case A: Exact match found
+            // Exact match found
             std::cout << date << " => " << val << " = " << val * it->second << std::endl;
         }
         else if (it == _data.begin()) {
-            // Case B: Date is earlier than our very first database entry.
-            // Since there is no "lower date", we cannot perform the calculation.
+            // Date is earlier than our very first database entry.
             std::cerr << "Error: bad input => " << date << std::endl;
         }
         else {
-            // Case C: Exact match not found, but a lower date exists.
-            // We move the iterator back one position to get the closest past date.
+            // Exact match not found, but a lower date exists.
             --it;
             std::cout << date << " => " << val << " = " << val * it->second << std::endl;
         }
