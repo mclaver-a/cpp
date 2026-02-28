@@ -1,30 +1,25 @@
-NAME = PmergeMe
+NAME    = PmergeMe
+SRC     = main.cpp PmergeMe.cpp
+OBJ     = $(SRC:.cpp=.o)
+CXX     = c++
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98 #pedantic
 
-SRC = main.cpp PmergeMe.cpp
-
-OBJ = $(SRC:.cpp=.o)
-
-CXX = c++
-
-CFLAGS = -Wall -Werror -Wextra -std=c++98 -g #-fsanitize=address
-
-REMOVE = rm -f
-
+RM      = rm -f
 HEADERS = PmergeMe.hpp
 
 all: $(NAME)
 
-$(NAME): Makefile $(OBJ) $(HEADERS)
-	$(CXX) $(CFLAGS) $(OBJ) -o $(NAME)
+$(NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 
-%.o: %.cpp $(HEADERS)
+%.o: %.cpp $(HEADERS) Makefile
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	$(REMOVE) $(OBJ)
+	$(RM) $(OBJ)
 
 fclean: clean
-	$(REMOVE) $(NAME)
+	$(RM) $(NAME)
 
 re: fclean all
 

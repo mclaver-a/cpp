@@ -12,8 +12,13 @@ void RPN::calculate(const std::string& expr) {
     for (size_t i = 0; i < expr.length(); ++i) {
         if (isspace(expr[i])) continue;
         if (isdigit(expr[i])) {
+                        if (i + 1 < expr.length() && isdigit(expr[i + 1])) {
+                std::cerr << "Error" << std::endl; // Found a number >= 10
+                return;
+            }
             _stack.push_back(expr[i] - '0');
-        } else if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/') {
+        }
+        else if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/') {
             if (_stack.size() < 2) { std::cerr << "Error" << std::endl; return; }
             int b = _stack.back(); _stack.pop_back();
             int a = _stack.back(); _stack.pop_back();
